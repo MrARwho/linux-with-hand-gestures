@@ -45,6 +45,10 @@ class GestureRecognizer:
             min_tracking_confidence=0.5,
         )
         self.prev_frame = None
+        self._hand_history: list[tuple[float, float]] = []
+        self._swipe_threshold_x = 0.15
+        self._swipe_threshold_y = 0.15
+        self._swipe_window = 5
 
     @staticmethod
     def _euclidean_distance(p1, p2) -> float:
@@ -205,6 +209,77 @@ class GestureRecognizer:
                 (0, 255, 0),
                 3,
             )
+
+        return output_frame, landmarks, gesture
+
+    def _detect_swipe(self, frame_width: int, frame_height: int) -> str:
+        if len(self._hand_history) < self._swipe_window:
+            return "none"
+
+        recent = self._hand_history[-self._swipe_window:]
+        start = recent[0]
+        end = recent[-1]
+
+        dx = (end[0] - start[0]) * frame_width
+        dy = (end[1] - start[1]) * frame_height
+
+        if abs(dx) < self._swipe_threshold_x * frame_width and abs(dy) < self._swipe_threshold_y * frame_height:
+            return "none"
+
+        if abs(dx) > abs(dy):
+            if dx < 0:
+                return "swipe_left"
+            else:
+                return "swipe_right"
+        else:
+            if dy < 0:
+                return "swipe_up"
+            else:
+                return "swipe_down"
+
+    def process_frame(self, frame) -> Tuple:
+        """
+        Process a single frame: detect hands, extract landmarks, classify gesture.
+
+        Returns: (frame_with_landmarks, landmarks_list_or_None, gesture_name_or_None)
+        """
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(image)
+
+        output_frame = frame.copy()
+        landmarks = None
+        gesture = None
+
+        if results.multi_hand_landmarks and len(results.multi_hand_landmarks) > 0:
+            hand_landmarks = results.multi_hand_landmarks[0]
+            landmarks = hand_landmarks.landmark
+            gesture = self.classify(landmarks)
+
+            wrist = self._get_wrist(landmarks)
+            self._hand_history.append((wrist.x, wrist.y))
+
+            if len(self._hand_history) > 15:
+                self._hand_history.pop(0)
+
+            if self.mp_drawing is not None:
+                self.mp_drawing.draw_landmarks(
+                    output_frame,
+                    hand_landmarks,
+                    self.mp_hands.HAND_CONNECTIONS,
+                )
+
+            # Draw gesture label
+            cv2.putText(
+                output_frame,
+                gesture,
+                (10, 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.2,
+                (0, 255, 0),
+                3,
+            )
+        else:
+            self._hand_history.clear()
 
         return output_frame, landmarks, gesture
 

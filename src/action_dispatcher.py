@@ -108,6 +108,20 @@ def _key_press(dispatcher: ActionDispatcher, gesture: str) -> None:
     dispatcher._simulate_key(gesture)
 
 
+def _swipe(dispatcher: ActionDispatcher, gesture: str) -> None:
+    swipe_map = {
+        "swipe_left": ["super", "left"],
+        "swipe_right": ["super", "right"],
+        "swipe_up": ["alt", "tab"],
+        "swipe_down": ["alt", "shift", "tab"],
+    }
+    keys = swipe_map.get(gesture, [])
+    for key in keys:
+        dispatcher.press_super(key)
+    for key in reversed(keys):
+        dispatcher._key_sim.release(key)
+
+
 _action_map: dict[str, Callable[[ActionDispatcher, str], None]] = {}
 
 for g in SUPER_KEYS:
@@ -124,3 +138,6 @@ for g in SUPER_KEYS_SHIFT:
 
 for g in _key_map:
     _action_map[g] = _key_press
+
+for g in ["swipe_left", "swipe_right", "swipe_up", "swipe_down"]:
+    _action_map[g] = _swipe

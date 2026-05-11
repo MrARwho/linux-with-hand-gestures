@@ -55,6 +55,9 @@ def capture_loop(args):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     recognizer = GestureRecognizer(static_mode=False, max_hands=1)
     dispatcher = ActionDispatcher()
     numlock_monitor = NumLockMonitor()
@@ -85,8 +88,13 @@ def capture_loop(args):
 
             if not numlock_monitor.is_gesture_mode:
                 output_frame = frame.copy()
+                gesture = None
+                landmarks = None
             else:
                 output_frame, landmarks, gesture = recognizer.process_frame(frame)
+
+                if not landmarks:
+                    gesture = recognizer._detect_swipe(frame_width, frame_height)
 
             if numlock_monitor.is_gesture_mode:
                 debounce_ms = 500
