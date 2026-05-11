@@ -1,0 +1,15 @@
+[Unit]
+Description=Hand Gesture Control Service
+After=graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/home/ar/hand_gesture/venv/bin/python -m src.main
+Restart=on-failure
+RestartSec=5
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/ar/.Xauthority
+
+[Install]
+WantedBy=multi-user.target
