@@ -1,1 +1,14 @@
-plan.md
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+.vscode/
+.idea/
+*.mp4
+*.avi
+*.png
